@@ -528,7 +528,7 @@
 <div class="wrap">
 
   <!-- ===================== HERO ===================== -->
-  <header class="hero">
+  <header class="hero" id="heroBanner">
     <div class="hero-inner">
       <div class="eyebrow">Madams of WilBea · 1st Anniversary</div>
       <div class="crest">✦ ✦ ✦</div>
@@ -1268,6 +1268,7 @@ function showSuccess(){
   $("previewBanner").style.display = "none";
   $("joinNote").style.display = ($("member").value === "No") ? "block" : "none";
   $("grandDetails").style.display = "none";
+  $("heroBanner").style.display = "none";
   $("successScreen").style.display = "block";
   $("successScreen").scrollIntoView({behavior:"smooth", block:"start"});
 }
