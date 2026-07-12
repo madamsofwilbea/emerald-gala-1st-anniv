@@ -841,7 +841,7 @@
    (You'll get this link in the NEXT step.)
    Leave it as-is for now — the form runs in safe PREVIEW MODE.
    ============================================================ */
-const SUBMIT_URL = "PASTE_YOUR_LINK_HERE";
+const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw3ZL1vE1DoRxaQ1OHFIXA8cBziZa1HZGeaUykjLBtbcDaIx8KupumQxTM-z9rtWWZR/exec";
 /* =================== end EDIT: SUBMIT LINK =================== */
 
 const PRICE = 1000;
@@ -875,7 +875,7 @@ function checkDonation(){
 function updatePayTotal(){
   const reg = pax * PRICE, don = donationAmt();
   $("payTotal").textContent = peso(reg + don);
-  $("payBreakdown").textContent = don > 0 ? ("Registration " + peso(reg) + "  •  Vault " + peso(don)) : "";
+  $("payBreakdown").textContent = don > 0 ? ("Registration " + peso(reg) + "  •  Madams' Vault " + peso(don)) : "";
 }
 $("vaultMinus").onclick = () => { let v = parseInt($("vaultAmount").value,10)||0; v = Math.max(0, Math.ceil(v/10)*10 - 10); $("vaultAmount").value = v; updatePayTotal(); checkDonation(); };
 $("vaultPlus").onclick  = () => { let v = parseInt($("vaultAmount").value,10)||0; v = Math.floor(v/10)*10 + 10; $("vaultAmount").value = v; updatePayTotal(); checkDonation(); };
