@@ -540,7 +540,7 @@
   </header>
 
   <!-- ===================== DETAILS ===================== -->
-  <section class="details">
+  <section class="details" id="grandDetails">
     <div class="details-title">The Grand Details</div>
     <div class="details-orn"><span>✦</span></div>
     <div class="details-list">
@@ -1267,6 +1267,7 @@ function showSuccess(){
   $("formCard").style.display = "none";
   $("previewBanner").style.display = "none";
   $("joinNote").style.display = ($("member").value === "No") ? "block" : "none";
+  $("grandDetails").style.display = "none";
   $("successScreen").style.display = "block";
   $("successScreen").scrollIntoView({behavior:"smooth", block:"start"});
 }
