@@ -486,6 +486,9 @@
   .s-rem-k{color:var(--gold);font-weight:700;flex-shrink:0;min-width:84px;text-transform:uppercase;font-size:11px;letter-spacing:.1em;padding-top:2px;}
   .s-rem-v{color:var(--text-deep);font-weight:600;font-size:14px;line-height:1.4;}
   .s-note{font-size:13.5px;color:#5f6b60;max-width:440px;margin:0 auto 22px;text-align:justify;}
+  .s-join{max-width:440px;margin:6px auto 0;background:#fff;border:1px solid var(--gold);border-radius:10px;padding:16px;text-align:center;}
+  .s-join-line{font-size:14px;color:var(--forest);font-weight:600;line-height:1.5;}
+  .s-join-btn{display:inline-block;margin-top:12px;background:var(--forest);color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;}
   .s-contact{background:var(--emerald-deep);color:var(--ivory);border-radius:12px;padding:16px 18px;max-width:380px;margin:0 auto;}
   .s-contact-title{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-light);font-weight:700;margin-bottom:8px;}
   .s-contact-row{font-size:14px;padding:3px 0;}
@@ -602,36 +605,63 @@
       </div>
       <p class="section-note" id="detailsNote">Tell us who's gracing the Gala.</p>
 
-      <label class="field-label">Full Name <span class="req">*</span></label>
-      <input type="text" id="fullName" placeholder="Juana Dela Cruz">
+      <div class="two-col">
+        <div>
+          <label class="field-label">Full Name <span class="req">*</span></label>
+          <input type="text" id="fullName" placeholder="Juana Dela Cruz">
+        </div>
+        <div>
+          <label class="field-label">Nickname <span class="opt">(optional)</span></label>
+          <input type="text" id="nickname" placeholder="What should we call you?">
+        </div>
+      </div>
 
-      <label class="field-label">Nickname <span class="opt">(optional)</span></label>
-      <input type="text" id="nickname" placeholder="What should we call you, Madam?">
-
-      <label class="field-label">Email Address <span class="req">*</span></label>
-      <input type="email" id="email" placeholder="you@email.com">
-
-      <label class="field-label">Mobile Number <span class="req">*</span></label>
-      <input type="tel" id="mobile" placeholder="0917 123 4567">
+      <div class="two-col">
+        <div>
+          <label class="field-label">Email Address <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="you@email.com">
+        </div>
+        <div>
+          <label class="field-label">Mobile Number <span class="req">*</span></label>
+          <input type="tel" id="mobile" placeholder="0917 123 4567">
+        </div>
+      </div>
 
       <label class="field-label">City / Province <span class="req">*</span></label>
       <input type="text" id="city" placeholder="Quezon City">
 
-      <label class="field-label">Instagram <span class="req">*</span></label>
-      <input type="text" id="instagram" placeholder="@username (or type N/A)">
+      <div class="two-col">
+        <div>
+          <label class="field-label">Instagram <span class="req">*</span></label>
+          <input type="text" id="instagram" placeholder="@username (or type N/A)">
+        </div>
+        <div>
+          <label class="field-label">X (Twitter) <span class="req">*</span></label>
+          <input type="text" id="twitter" placeholder="@username (or type N/A)">
+        </div>
+      </div>
 
-      <label class="field-label">X (Twitter) <span class="req">*</span></label>
-      <input type="text" id="twitter" placeholder="@username (or type N/A)">
-
-      <label class="field-label">How did you hear about the Gala? <span class="req">*</span></label>
-      <select id="heard">
-        <option value="" disabled selected>Please select…</option>
-        <option>Instagram</option>
-        <option>X (Twitter)</option>
-        <option>Facebook</option>
-        <option>Word of mouth from a fellow Madam</option>
-        <option>Other</option>
-      </select>
+      <div class="two-col">
+        <div>
+          <label class="field-label">Are you a member of Madams of WilBea? <span class="req">*</span></label>
+          <select id="member">
+            <option value="" disabled selected>Please select…</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">How did you hear about the Gala? <span class="req">*</span></label>
+          <select id="heard">
+            <option value="" disabled selected>Please select…</option>
+            <option>Instagram</option>
+            <option>X (Twitter)</option>
+            <option>Facebook</option>
+            <option>Word of mouth from a fellow WilBear</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- 3. SQUAD LINEUP (squad only) -->
@@ -639,7 +669,7 @@
       <div class="section-head">
         <span class="section-title">Your Entourage</span>
       </div>
-      <p class="section-note">You're first on the list above — present each Madam completing your Entourage.</p>
+      <p class="section-note">You're first on the list above — present the rest of your Entourage.</p>
       <div id="squadFields"></div>
 
       <div class="backup">
@@ -691,9 +721,9 @@
       <div class="summary" id="summaryBody">
         <div class="summary-group-title">Reservation</div>
         <div class="summary-row"><span class="s-k">Type</span><span class="s-v">Entourage</span></div>
-        <div class="summary-row"><span class="s-k">Guests</span><span class="s-v">3 Madams</span></div>
+        <div class="summary-row"><span class="s-k">Guests</span><span class="s-v">3 guests</span></div>
 
-        <div class="summary-group-title">Head Madam</div>
+        <div class="summary-group-title">Head of Entourage</div>
         <div class="summary-row"><span class="s-k">Name</span><span class="s-v">Juana Dela Cruz (Juday)</span></div>
         <div class="summary-row"><span class="s-k">Email</span><span class="s-v">juana@email.com</span></div>
         <div class="summary-row"><span class="s-k">Mobile</span><span class="s-v">0917 123 4567</span></div>
@@ -703,8 +733,8 @@
         <div class="summary-row"><span class="s-k">Heard via</span><span class="s-v">Instagram</span></div>
 
         <div class="summary-group-title">Entourage</div>
-        <div class="summary-row"><span class="s-k">Madam #2</span><span class="s-v">Maria Santos (Marie)</span></div>
-        <div class="summary-row"><span class="s-k">Madam #3</span><span class="s-v">Elena Cruz (Len)</span></div>
+        <div class="summary-row"><span class="s-k">Guest #2</span><span class="s-v">Maria Santos (Marie)</span></div>
+        <div class="summary-row"><span class="s-k">Guest #3</span><span class="s-v">Elena Cruz (Len)</span></div>
 
         <div class="summary-group-title">Backup Contact</div>
         <div class="summary-row"><span class="s-k">Mobile</span><span class="s-v">0918 222 3333</span></div>
@@ -813,6 +843,11 @@
     </div>
 
     <p class="s-note">Please keep an eye on your inbox (and spam folder, just in case) for your official confirmation email. If you have any urgent questions in the meantime, feel free to reach out to our event coordination team.</p>
+
+    <div class="s-join" id="joinNote" style="display:none;">
+      <div class="s-join-line">Not yet part of our FANMILY? We'd be delighted to welcome you!</div>
+      <a class="s-join-btn" href="https://tinyurl.com/MadamsAppForm">Apply for membership here</a>
+    </div>
   </section>
 
   <!-- ===================== FOOTER ===================== -->
@@ -827,7 +862,7 @@
 <!-- VALIDATION POPUP -->
 <div class="modal-overlay" id="modal">
   <div class="modal-card">
-    <div class="modal-title">Almost there, Madam 👑</div>
+    <div class="modal-title">Almost there! 👑</div>
     <p class="modal-sub">A few things still need your touch:</p>
     <ul class="modal-list" id="modalList"></ul>
     <button class="modal-btn" id="modalClose">Got it</button>
@@ -898,7 +933,7 @@ function renderSquad(){
     wrap.className = "squad-member";
     const t = document.createElement("div");
     t.className = "squad-member-title";
-    t.textContent = "Madam #" + n;
+    t.textContent = "Guest #" + n;
     const row = document.createElement("div");
     row.className = "two-col";
     const nameInp = document.createElement("input");
@@ -931,7 +966,7 @@ function setMode(m){
     if(pax < 2) pax = 2;
     $("paxRow").style.display = "flex";
     $("squadSection").style.display = "";
-    $("detailsNote").textContent = "Your details, as the Madam leading the Entourage.";
+    $("detailsNote").textContent = "Your details, as the one leading the Entourage.";
   }
   $("submitBtn").textContent = m === "squad" ? "Reserve our seats." : "Reserve my seat.";
   renderTotal();
@@ -988,6 +1023,7 @@ function validateDetails(){
     ["email","a valid email"],
     ["mobile","your mobile number"],
     ["city","your city / province"],
+    ["member","whether you're a member of Madams of WilBea"],
     ["heard","how you heard about the Gala"]
   ];
   req.forEach(([id,label]) => {
@@ -1019,7 +1055,7 @@ function validateDetails(){
       inp.classList.toggle("invalid", bad);
       if(bad){ ok = false; missingName = true; }
     });
-    if(missingName) errors.push("Enter a full name for every Madam in your Entourage.");
+    if(missingName) errors.push("Enter a full name for everyone in your Entourage.");
     const bm = $("backupMobile"), be = $("backupEmail");
     const bmBad = !bm.value.trim(); markInvalid(bm, bmBad);
     if(bmBad){ ok = false; errors.push("Add a backup mobile number."); }
@@ -1070,9 +1106,9 @@ function buildSummary(){
   let h = "";
   h += sGroup("Reservation");
   h += sRow("Type", mode === "squad" ? "Entourage" : "The Icon (solo)");
-  if(mode === "squad") h += sRow("Guests", pax + " Madams");
+  if(mode === "squad") h += sRow("Guests", pax + " guests");
 
-  h += sGroup(mode === "squad" ? "Head Madam" : "Your Details");
+  h += sGroup(mode === "squad" ? "Head of Entourage" : "Your Details");
   h += sRow("Name", g("fullName") + (g("nickname") ? " (" + g("nickname") + ")" : ""));
   h += sRow("Email", g("email"));
   h += sRow("Mobile", g("mobile"));
@@ -1086,7 +1122,7 @@ function buildSummary(){
     document.querySelectorAll("#squadFields .squad-member").forEach((m, i) => {
       const name = m.querySelector('input[data-role="name"]').value.trim();
       const nick = m.querySelector('input[data-role="nick"]').value.trim();
-      h += sRow("Madam #" + (i + 2), name + (nick ? " (" + nick + ")" : ""));
+      h += sRow("Guest #" + (i + 2), name + (nick ? " (" + nick + ")" : ""));
     });
     h += sGroup("Backup Contact");
     h += sRow("Mobile", g("backupMobile"));
@@ -1162,6 +1198,7 @@ $("submitBtn").onclick = async () => {
     city: $("city").value.trim(),
     instagram: $("instagram").value.trim(),
     twitter: $("twitter").value.trim(),
+    member: $("member").value,
     heardFrom: $("heard").value,
     registration: mode === "squad" ? "Squad" : "Solo",
     guests: pax,
@@ -1215,6 +1252,7 @@ $("submitBtn").onclick = async () => {
 function showSuccess(){
   $("formCard").style.display = "none";
   $("previewBanner").style.display = "none";
+  $("joinNote").style.display = ($("member").value === "No") ? "block" : "none";
   $("successScreen").style.display = "block";
   window.scrollTo({top:0, behavior:"smooth"});
 }
