@@ -257,6 +257,8 @@
     transition:background .15s, color .15s;
   }
   .continue-btn:hover{background:var(--forest);color:#fff;}
+  .step-back{background:none;border:none;color:var(--forest);font-family:'Lato',sans-serif;font-weight:700;font-size:13px;cursor:pointer;padding:0 0 14px;}
+  .step-back:hover{text-decoration:underline;}
 
   /* ---------- SUMMARY ---------- */
   .summary{
@@ -567,6 +569,7 @@
 
   <!-- ===================== FORM ===================== -->
   <main class="card" id="formCard">
+  <div id="stepForm">
 
     <!-- 1. SOLO / SQUAD -->
     <div class="section">
@@ -711,6 +714,7 @@
     </div>
 
     <button class="continue-btn" id="continueBtn">Review my reservation →</button>
+  </div><!-- /stepForm -->
 
     <!-- REGISTRATION SUMMARY -->
     <div class="section" id="summarySection" style="display:none;">
@@ -755,6 +759,7 @@
 
     <!-- PAYMENT -->
     <div class="section" id="paySection" style="display:none;">
+      <button type="button" class="step-back" id="payBackBtn">← Back to review</button>
       <div class="section-head">
         <span class="section-title">Payment</span>
       </div>
@@ -1138,28 +1143,35 @@ function buildSummary(){
   $("summaryBody").innerHTML = h;
 }
 
-/* ---- continue → review ---- */
+/* ---- paged step navigation ---- */
+function goTop(){ $("formCard").scrollIntoView({behavior:"smooth", block:"start"}); }
+
 $("continueBtn").onclick = () => {
   const res = validateDetails();
   if(!res.ok){ showModal(res.errors); return; }
   buildSummary();
+  $("stepForm").style.display = "none";
   $("summarySection").style.display = "";
-  $("continueBtn").style.display = "none";
-  $("summarySection").scrollIntoView({behavior:"smooth", block:"start"});
+  goTop();
 };
-
-/* ---- review: edit / proceed ---- */
 $("editBtn").onclick = () => {
   $("summarySection").style.display = "none";
   $("paySection").style.display = "none";
   $("confirmSection").style.display = "none";
-  $("continueBtn").style.display = "block";
-  $("formCard").scrollIntoView({behavior:"smooth", block:"start"});
+  $("stepForm").style.display = "";
+  goTop();
 };
 $("proceedBtn").onclick = () => {
+  $("summarySection").style.display = "none";
   $("paySection").style.display = "";
   $("confirmSection").style.display = "";
-  $("paySection").scrollIntoView({behavior:"smooth", block:"start"});
+  goTop();
+};
+$("payBackBtn").onclick = () => {
+  $("paySection").style.display = "none";
+  $("confirmSection").style.display = "none";
+  $("summarySection").style.display = "";
+  goTop();
 };
 
 /* ---- payment method + QR ---- */
@@ -1254,7 +1266,7 @@ function showSuccess(){
   $("previewBanner").style.display = "none";
   $("joinNote").style.display = ($("member").value === "No") ? "block" : "none";
   $("successScreen").style.display = "block";
-  window.scrollTo({top:0, behavior:"smooth"});
+  $("successScreen").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 setMode("solo");
