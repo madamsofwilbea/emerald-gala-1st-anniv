@@ -571,14 +571,16 @@
   <main class="card" id="formCard">
   <div id="stepForm">
 
+    <div id="partnerBanner" style="display:none;background:linear-gradient(135deg,#0c3125,#2E5D3A);color:#f7f4ec;border:1px solid #DAA75A;border-radius:12px;padding:14px 18px;margin:0 0 20px;text-align:center;font-size:14px;line-height:1.55;"></div>
+
     <!-- 1. SOLO / SQUAD -->
     <div class="section">
       <div class="section-head">
         <span class="section-title">Your Reservation</span>
       </div>
-      <p class="section-note">How will you make your entrance — solo, or with an entourage?</p>
+      <p class="section-note" id="resNote">How will you make your entrance — solo, or with an entourage?</p>
 
-      <div class="mode-toggle">
+      <div class="mode-toggle" id="modeToggle">
         <button type="button" class="mode-btn active" id="modeSolo">
           <span class="mode-title">The Icon</span>
           <span class="mode-sub">Me, Myself &amp; I</span>
@@ -644,8 +646,8 @@
         </div>
       </div>
 
-      <div class="two-col">
-        <div>
+      <div class="two-col" id="memberHeardRow">
+        <div id="memberField">
           <label class="field-label">Are you a member of Madams of WilBea? <span class="req">*</span></label>
           <select id="member">
             <option value="" disabled selected>Please select…</option>
@@ -887,10 +889,30 @@ const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw3ZL1vE1DoRxaQ1OHFI
 /* =================== end EDIT: SUBMIT LINK =================== */
 
 const PRICE = 1000;
-const MAX_PAX = 10;
+let MAX_PAX = 10;
+let MIN_PAX = 2;
 let mode = "solo";
 let pax = 1;
 let proofFile = null;
+
+/* ---- co-fandom partner links (?ref=code) ---- */
+const PARTNERS = {
+  ates: "Ates of WilBea",
+  bearries: "Bearries Official",
+  cubbies: "Cubbies of WilBea",
+  beaholics: "Official BeaHolics",
+  global: "WilBea Global",
+  ofc: "WilBea OFC",
+  wilbest: "Wilbest Official",
+  mindanao: "WilBea Mindanao",
+  visayas: "WilBea Visayas",
+  wilovers: "Wilovers Official"
+};
+let partnerFandom = "";
+{
+  const ref = (new URLSearchParams(location.search).get("ref") || "").toLowerCase().trim();
+  if (ref && PARTNERS[ref]) partnerFandom = PARTNERS[ref];
+}
 
 const peso = n => "₱" + n.toLocaleString("en-PH");
 const $ = id => document.getElementById(id);
@@ -925,6 +947,7 @@ $("vaultAmount").addEventListener("input", () => { updatePayTotal(); checkDonati
 
 function renderTotal(){
   $("paxCount").textContent = pax;
+  $("squadSection").style.display = (mode === "squad" && pax >= 2) ? "" : "none";
   updatePayTotal();
 }
 function renderSquad(){
@@ -970,7 +993,7 @@ function setMode(m){
     $("squadSection").style.display = "none";
     $("detailsNote").textContent = "Tell us who's gracing the Gala.";
   } else {
-    if(pax < 2) pax = 2;
+    if(pax < MIN_PAX) pax = MIN_PAX;
     $("paxRow").style.display = "flex";
     $("squadSection").style.display = "";
     $("detailsNote").textContent = "Your details, as the one leading the Entourage.";
@@ -982,7 +1005,7 @@ function setMode(m){
 $("modeSolo").onclick = () => setMode("solo");
 $("modeSquad").onclick = () => setMode("squad");
 $("plus").onclick = () => { if(pax < MAX_PAX){ pax++; renderTotal(); renderSquad(); } };
-$("minus").onclick = () => { if(pax > 2){ pax--; renderTotal(); renderSquad(); } };
+$("minus").onclick = () => { if(pax > MIN_PAX){ pax--; renderTotal(); renderSquad(); } };
 
 /* ---- file upload + preview ---- */
 $("fileInput").addEventListener("change", e => {
@@ -1063,13 +1086,15 @@ function validateDetails(){
       if(bad){ ok = false; missingName = true; }
     });
     if(missingName) errors.push("Enter a full name for everyone in your Entourage.");
-    const bm = $("backupMobile"), be = $("backupEmail");
-    const bmBad = !bm.value.trim(); markInvalid(bm, bmBad);
-    if(bmBad){ ok = false; errors.push("Add a backup mobile number."); }
-    let beBad = !be.value.trim();
-    if(beBad){ ok = false; errors.push("Add a backup email."); }
-    else if(!EMAIL_RE.test(be.value.trim())){ beBad = true; ok = false; errors.push("The backup email doesn't look right."); }
-    markInvalid(be, beBad);
+    if(pax >= 2){
+      const bm = $("backupMobile"), be = $("backupEmail");
+      const bmBad = !bm.value.trim(); markInvalid(bm, bmBad);
+      if(bmBad){ ok = false; errors.push("Add a backup mobile number."); }
+      let beBad = !be.value.trim();
+      if(beBad){ ok = false; errors.push("Add a backup email."); }
+      else if(!EMAIL_RE.test(be.value.trim())){ beBad = true; ok = false; errors.push("The backup email doesn't look right."); }
+      markInvalid(be, beBad);
+    }
   }
   // freebies
   const fb = $("freebies");
@@ -1113,7 +1138,7 @@ function buildSummary(){
   let h = "";
   h += sGroup("Reservation");
   h += sRow("Type", mode === "squad" ? "Entourage" : "The Icon (solo)");
-  if(mode === "squad") h += sRow("Guests", pax + " guests");
+  if(mode === "squad") h += sRow("Guests", pax + (pax === 1 ? " guest" : " guests"));
 
   h += sGroup(mode === "squad" ? "Head of Entourage" : "Your Details");
   h += sRow("Name", g("fullName") + (g("nickname") ? " (" + g("nickname") + ")" : ""));
@@ -1215,6 +1240,7 @@ $("submitBtn").onclick = async () => {
     member: $("member").value,
     heardFrom: $("heard").value,
     registration: mode === "squad" ? "Squad" : "Solo",
+    partner: partnerFandom,
     guests: pax,
     squadMembers: mode === "squad"
       ? [...document.querySelectorAll("#squadFields .squad-member")].map(m => ({
@@ -1273,7 +1299,23 @@ function showSuccess(){
   $("successScreen").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
-setMode("solo");
+if (partnerFandom) {
+  MAX_PAX = 5;
+  MIN_PAX = 1;
+  $("partnerBanner").innerHTML = "💚 A warm welcome, <strong style=\"color:#E8C989;\">" + partnerFandom + "</strong>! We've reserved <strong>5 slots</strong> for your admins. Please register everyone who's joining us under this one registration.";
+  $("partnerBanner").style.display = "block";
+  $("modeToggle").style.display = "none";
+  $("resNote").textContent = "Register your admins below — up to 5, all under one registration.";
+  const pm = document.querySelector(".pax-max");
+  if (pm) pm.textContent = "(max 5)";
+  // members question isn't needed — partners come from another fandom (auto "No")
+  const mf = $("memberField"); if (mf) mf.style.display = "none";
+  const mr = $("memberHeardRow"); if (mr) mr.style.display = "block";
+  $("member").value = "No";
+  setMode("squad");
+} else {
+  setMode("solo");
+}
 </script>
 </body>
 </html>
