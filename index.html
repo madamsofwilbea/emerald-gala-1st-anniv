@@ -908,6 +908,9 @@ let mode = "solo";
 let pax = 1;
 let proofFile = null;
 
+/* ===== MASTER SWITCH: false = ALL registration disabled (everyone sees the paused page, incl. members). true = normal per-link logic. ===== */
+const SITE_OPEN = false;
+
 /* ---- co-fandom partner links (?ref=code) ---- */
 /* ===== CO-FANDOM SWITCH: set to true to RE-ENABLE the ?ref= links, false to DISABLE them ===== */
 const PARTNER_OPEN = false;
@@ -1325,7 +1328,23 @@ function showSuccess(){
   $("successScreen").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
-if (partnerFandom && !PARTNER_OPEN) {
+function renderPausedHold_() {
+  const card = $("formCard");
+  const gd = $("grandDetails"); if (gd) gd.style.display = "none";
+  const hold = document.createElement("div");
+  hold.className = "card";
+  hold.style.textAlign = "center";
+  hold.innerHTML =
+    '<h2 style="font-family:\'Playfair Display\',serif;color:#1F4128;margin:0 0 12px;font-weight:700;">Registration Temporarily Paused</h2>' +
+    '<p style="color:#333;line-height:1.6;max-width:460px;margin:0 auto 12px;">We\'re truly overwhelmed by the demand for tickets, Madams! 💚 Registration is paused for a little while as we catch up and finalize a few details.</p>' +
+    '<p style="color:#666;font-size:14px;max-width:460px;margin:0 auto;">Please check back with us soon — thank you for your patience and love! ✨</p>';
+  if (card) { card.style.display = "none"; card.parentNode.insertBefore(hold, card); }
+}
+
+if (!SITE_OPEN) {
+  // MASTER SWITCH OFF — everyone (general, co-fandom, AND members) sees the paused page
+  renderPausedHold_();
+} else if (partnerFandom && !PARTNER_OPEN) {
   // Co-fandom registration is switched OFF — show a hold message, keep general form for non-ref visitors
   const card = $("formCard");
   const gd = $("grandDetails"); if (gd) gd.style.display = "none";
