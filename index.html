@@ -610,7 +610,10 @@
       </div>
       <p class="section-note" id="detailsNote">Tell us who's gracing the Gala.</p>
 
-      <div class="two-col">
+      <!-- Team Wilbest admin roster (filled by script on ?ref=wilbest) -->
+      <div id="wilbestRoster" style="display:none;"></div>
+
+      <div class="two-col" id="nameRow">
         <div>
           <label class="field-label">Full Name <span class="req">*</span></label>
           <input type="text" id="fullName" placeholder="Juana Dela Cruz">
@@ -632,10 +635,12 @@
         </div>
       </div>
 
-      <label class="field-label">City / Province <span class="req">*</span></label>
-      <input type="text" id="city" placeholder="Quezon City">
+      <div id="cityField">
+        <label class="field-label">City / Province <span class="req">*</span></label>
+        <input type="text" id="city" placeholder="Quezon City">
+      </div>
 
-      <div class="two-col">
+      <div class="two-col" id="socialRow">
         <div>
           <label class="field-label">Instagram <span class="req">*</span></label>
           <input type="text" id="instagram" placeholder="@username (or type N/A)">
@@ -688,19 +693,19 @@
         <p class="backup-note">A second contact from your Entourage — in case we can't reach you for confirmation or on Gala day.</p>
         <div class="two-col">
           <div>
-            <label class="field-label">Mobile Number <span class="req">*</span></label>
-            <input type="tel" id="backupMobile" placeholder="0917 123 4567">
-          </div>
-          <div>
             <label class="field-label">Email <span class="req">*</span></label>
             <input type="email" id="backupEmail" placeholder="email@email.com">
+          </div>
+          <div>
+            <label class="field-label">Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="backupMobile" placeholder="0917 123 4567">
           </div>
         </div>
       </div>
     </div>
 
     <!-- FREEBIES -->
-    <div class="section">
+    <div class="section" id="freebiesSection">
       <div class="section-head">
         <span class="section-title">Fan Favors</span>
       </div>
@@ -790,6 +795,35 @@
             <option value="Post my name as a donor">Yes, post my name as a donor</option>
             <option value="Anonymous">Keep me anonymous</option>
           </select>
+        </div>
+      </div>
+
+      <!-- SPONSORSHIP & COLLAB — shown only on the Team Wilbest page -->
+      <div class="vault" id="sponsorBlock" style="display:none;">
+        <div class="vault-title">Sponsorship &amp; Collab with the Madams? 💚</div>
+        <div class="vault-sub">We'd be delighted to partner with you — whether as a sponsor of the Gala or on a future collab. Have a peek at our kit, then let us know below.</div>
+        <a id="sponsorKitLink" href="#" target="_blank" rel="noopener"
+           style="display:inline-block;margin-top:12px;background:#2E5D3A;color:#F7F4EC;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.03em;padding:10px 16px;border-radius:9px;border:1px solid #DAA75A;">
+          📄 View the Sponsorship Kit
+        </a>
+
+        <label class="field-label" style="font-size:13px;margin-top:16px;">Would you like to sponsor or collaborate with us?</label>
+        <select id="sponsorChoice">
+          <option value="Not at this time" selected>Not at this time</option>
+          <option value="Yes — I'm interested">Yes — I'm interested</option>
+          <option value="Maybe — please send details">Maybe — please send me the details</option>
+        </select>
+
+        <div id="sponsorDetail" style="display:none;margin-top:14px;">
+          <label class="field-label" style="font-size:13px;">What do you have in mind? <span class="opt">(optional)</span></label>
+          <textarea id="sponsorNote" placeholder="e.g. a raffle prize, a giveaway, a booth, a future project with the Madams…"></textarea>
+
+          <label class="field-label" style="font-size:13px;margin-top:12px;">Pledge an amount today? <span class="opt">(optional)</span></label>
+          <div class="vault-amount">
+            <span class="vpeso">₱</span>
+            <input type="number" id="sponsorAmount" value="0" min="0" step="100" inputmode="numeric">
+          </div>
+          <div class="vault-hint">Any amount — it will be added to your total below. Leave it at 0 and we'll arrange the details with you separately. 💚</div>
         </div>
       </div>
 
@@ -917,6 +951,21 @@ const PARTNER_OPEN = false;
 /* ===== ENTOURAGE SWITCH: set to true to allow Entourage, false = Icon (solo) only ===== */
 const ENTOURAGE_OPEN = false;
 
+/* ===== TEAM WILBEST LINK (?ref=wilbest) =====
+   This link works even while SITE_OPEN = false.
+   Set WILBEST_OPEN = false to switch it off. ===== */
+const WILBEST_OPEN  = true;
+const WILBEST_CODE  = "wilbest";
+const WILBEST_NAMES = ["Roshan De Vera", "Manolito Arasga", "Virginia Espiritu", "Maffy Ramos"];
+const SPONSOR_KIT_URL = "https://drive.google.com/file/d/1I3xCnpS1hoBoEDpqn1onoDCEmo6d9tpP/view?usp=drive_link";
+
+/* current names on the Team Wilbest page (they can be edited, but always four) */
+function wilbestNames_(){
+  const els = [...document.querySelectorAll(".wb-name")];
+  if (!els.length) return WILBEST_NAMES.slice();
+  return els.map(e => e.value.trim());
+}
+
 const PARTNERS = {
   ates: "Ates of WilBea",
   bearries: "Bearries Official",
@@ -933,9 +982,11 @@ const PARTNERS = {
 const MEMBERS_CODE = "madams";
 let partnerFandom = "";
 let isMember = false;
+let isWilbest = false;
 {
   const ref = (new URLSearchParams(location.search).get("ref") || "").toLowerCase().trim();
-  if (ref === MEMBERS_CODE) isMember = true;
+  if (ref === WILBEST_CODE && WILBEST_OPEN) isWilbest = true;
+  else if (ref === MEMBERS_CODE) isMember = true;
   else if (ref && PARTNERS[ref]) partnerFandom = PARTNERS[ref];
 }
 
@@ -948,14 +999,21 @@ if(!isPreview){ $("previewBanner").style.display = "none"; }
 
 /* ---- solo / squad + pax ---- */
 function donationAmt(){
+  if (isWilbest){
+    const el = $("sponsorAmount");
+    const s = el ? parseInt(el.value, 10) : 0;
+    return (s && s > 0) ? s : 0;
+  }
   const v = parseInt($("vaultAmount").value, 10);
   return (v && v > 0) ? v : 0;
 }
 function donationValid(){
+  if (isWilbest) return true;          // sponsorship pledge — any amount is fine
   const d = donationAmt();
   return d === 0 || d % 10 === 0;
 }
 function checkDonation(){
+  if (isWilbest) return true;
   const bad = donationAmt() > 0 && donationAmt() % 10 !== 0;
   $("vaultErr").style.display = bad ? "block" : "none";
   document.querySelector(".vault-amount").classList.toggle("invalid", bad);
@@ -964,9 +1022,11 @@ function checkDonation(){
 function updatePayTotal(){
   const reg = pax * PRICE, don = donationAmt();
   $("payTotal").textContent = peso(reg + don);
-  $("payBreakdown").textContent = don > 0 ? ("Registration " + peso(reg) + "  •  Madams' Vault " + peso(don)) : "";
+  $("payBreakdown").textContent = don > 0
+    ? ("Registration " + peso(reg) + "  •  " + (isWilbest ? "Sponsorship " : "Madams' Vault ") + peso(don))
+    : "";
   const ack = document.getElementById("vaultAck");
-  if (ack) ack.style.display = don > 0 ? "block" : "none";
+  if (ack) ack.style.display = (!isWilbest && don > 0) ? "block" : "none";
 }
 $("vaultMinus").onclick = () => { let v = parseInt($("vaultAmount").value,10)||0; v = Math.max(0, Math.ceil(v/10)*10 - 10); $("vaultAmount").value = v; updatePayTotal(); checkDonation(); };
 $("vaultPlus").onclick  = () => { let v = parseInt($("vaultAmount").value,10)||0; v = Math.floor(v/10)*10 + 10; $("vaultAmount").value = v; updatePayTotal(); checkDonation(); };
@@ -1073,6 +1133,42 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isNA = v => { const s = v.trim().toLowerCase(); return s === "" || s === "n/a" || s === "na"; };
 
 function validateDetails(){
+  /* Team Wilbest page — names are fixed, so only email + mobile are needed */
+  if (isWilbest){
+    let vOk = true;
+    const vErrors = [];
+    const em = $("email"), mo = $("mobile");
+    const emEmpty = !em.value.trim();
+    const emBad = emEmpty || !EMAIL_RE.test(em.value.trim());
+    markInvalid(em, emBad);
+    if (emEmpty) { vOk = false; vErrors.push("Please give us an email address for Team Wilbest."); }
+    else if (emBad) { vOk = false; vErrors.push("That email doesn't look right — please check it."); }
+    const moBad = !mo.value.trim();
+    markInvalid(mo, moBad);
+    if (moBad) { vOk = false; vErrors.push("Please give us a contact number."); }
+
+    // all four names must be filled in
+    let blankName = false;
+    document.querySelectorAll(".wb-name").forEach(inp => {
+      const bad = !inp.value.trim();
+      markInvalid(inp, bad);
+      if (bad) blankName = true;
+    });
+    if (blankName) { vOk = false; vErrors.push("Each of the four seats needs a name."); }
+
+    // backup contact
+    const bm = $("backupMobile"), be = $("backupEmail");
+    let beBad = !be.value.trim();
+    if (beBad) { vOk = false; vErrors.push("Add a backup email."); }
+    else if (!EMAIL_RE.test(be.value.trim())) { beBad = true; vOk = false; vErrors.push("The backup email doesn't look right."); }
+    markInvalid(be, beBad);
+    const bmBad = !bm.value.trim();
+    markInvalid(bm, bmBad);
+    if (bmBad) { vOk = false; vErrors.push("Add a backup mobile number."); }
+
+    return { ok: vOk, errors: vErrors };
+  }
+
   let ok = true;
   const errors = [];
   const req = [
@@ -1162,6 +1258,28 @@ function sRow(k, v){
 }
 function buildSummary(){
   const g = id => $(id).value.trim();
+
+  /* Team Wilbest review screen */
+  if (isWilbest){
+    const names = wilbestNames_();
+    let w = "";
+    w += sGroup("Reservation");
+    w += sRow("Type", "Team Wilbest · Co-Fandom Admins");
+    w += sRow("Guests", "4 guests");
+    w += sGroup("Contact Details");
+    w += sRow("Email", g("email"));
+    w += sRow("Mobile", g("mobile"));
+    w += sGroup("Your Entourage");
+    names.forEach((n, i) => { w += sRow("Guest #" + (i + 1), n); });
+    w += sGroup("Backup Contact");
+    w += sRow("Email", g("backupEmail"));
+    w += sRow("Mobile", g("backupMobile"));
+    w += '<div class="summary-total"><span class="st-label">TOTAL TO PAY</span><span class="st-amt">' +
+         peso(pax * PRICE) + '</span></div>';
+    $("summaryBody").innerHTML = w;
+    return;
+  }
+
   let h = "";
   h += sGroup("Reservation");
   h += sRow("Type", mode === "squad" ? "Entourage" : "The Icon (solo)");
@@ -1184,8 +1302,8 @@ function buildSummary(){
       h += sRow("Guest #" + (i + 2), name + (nick ? " (" + nick + ")" : ""));
     });
     h += sGroup("Backup Contact");
-    h += sRow("Mobile", g("backupMobile"));
     h += sRow("Email", g("backupEmail"));
+    h += sRow("Mobile", g("backupMobile"));
   }
 
   h += sGroup("Fan Favors");
@@ -1257,7 +1375,7 @@ $("submitBtn").onclick = async () => {
   btn.textContent = mode === "squad" ? "Reserving your seats…" : "Reserving your seat…";
 
   const data = {
-    fullName: $("fullName").value.trim(),
+    fullName: isWilbest ? wilbestNames_()[0] : $("fullName").value.trim(),
     nickname: $("nickname").value.trim(),
     email: $("email").value.trim(),
     mobile: $("mobile").value.trim(),
@@ -1268,21 +1386,25 @@ $("submitBtn").onclick = async () => {
     heardFrom: $("heard").value,
     referredBy: $("referredBy") ? $("referredBy").value.trim() : "",
     registration: mode === "squad" ? "Squad" : "Solo",
-    partner: partnerFandom,
+    partner: isWilbest ? "Team Wilbest" : partnerFandom,
     guests: pax,
-    squadMembers: mode === "squad"
-      ? [...document.querySelectorAll("#squadFields .squad-member")].map(m => ({
-          name: m.querySelector('input[data-role="name"]').value.trim(),
-          nickname: m.querySelector('input[data-role="nick"]').value.trim()
-        }))
-      : [],
+    squadMembers: isWilbest
+      ? wilbestNames_().slice(1).map(n => ({ name: n, nickname: "" }))
+      : (mode === "squad"
+        ? [...document.querySelectorAll("#squadFields .squad-member")].map(m => ({
+            name: m.querySelector('input[data-role="name"]').value.trim(),
+            nickname: m.querySelector('input[data-role="nick"]').value.trim()
+          }))
+        : []),
     backupMobile: mode === "squad" ? $("backupMobile").value.trim() : "",
     backupEmail: mode === "squad" ? $("backupEmail").value.trim() : "",
     freebies: $("freebies").value,
     freebieList: $("freebies").value.startsWith("No") ? "" : $("freebieList").value.trim(),
     paymentMethod: paymentMethod,
     vaultDonation: donationAmt(),
-    vaultAck: donationAmt() > 0 ? $("vaultAckChoice").value : "",
+    vaultAck: (!isWilbest && donationAmt() > 0) ? $("vaultAckChoice").value : "",
+    sponsorship: isWilbest ? $("sponsorChoice").value : "",
+    sponsorNote: (isWilbest && $("sponsorNote")) ? $("sponsorNote").value.trim() : "",
     total: pax * PRICE,
     grandTotal: pax * PRICE + donationAmt(),
     submittedAt: new Date().toLocaleString("en-PH")
@@ -1321,7 +1443,7 @@ $("submitBtn").onclick = async () => {
 function showSuccess(){
   $("formCard").style.display = "none";
   $("previewBanner").style.display = "none";
-  $("joinNote").style.display = ($("member").value === "No") ? "block" : "none";
+  $("joinNote").style.display = (!isWilbest && $("member").value === "No") ? "block" : "none";
   $("grandDetails").style.display = "none";
   $("heroBanner").style.display = "none";
   $("successScreen").style.display = "block";
@@ -1341,7 +1463,100 @@ function renderPausedHold_() {
   if (card) { card.style.display = "none"; card.parentNode.insertBefore(hold, card); }
 }
 
-if (!SITE_OPEN) {
+/* ===== TEAM WILBEST VIEW (?ref=wilbest) ===== */
+function applyWilbestMode_(){
+  // 4 fixed seats — no toggle, no counter
+  mode = "squad";
+  pax  = 4;
+
+  const hide = id => { const el = $(id); if (el) el.style.display = "none"; };
+
+  $("partnerBanner").innerHTML =
+    '💚 A warm welcome, <strong style="color:#E8C989;">Team Wilbest</strong>! ' +
+    'We\'ve reserved <strong>4 seats</strong> at The Emerald Gala for your admins. ' +
+    'Just confirm your contact details below — we\'ve taken care of the rest.';
+  $("partnerBanner").style.display = "block";
+
+  // Reservation section — fixed at 4
+  hide("modeToggle");
+  hide("paxRow");
+  $("resNote").textContent = "Four seats, reserved for your admins.";
+
+  // Details section — only email + mobile are asked of the main contact
+  $("detailsNote").textContent = "Who should we coordinate with? We just need one email and number we can reach you on.";
+  hide("wilbestRoster");
+
+  // Entourage section — the four names, presented like the main form
+  $("squadSection").style.display = "";
+  const entNote = document.querySelector("#squadSection .section-note");
+  if (entNote) entNote.textContent = "Your four admins are already on our list. Double-tap a name if you need to correct it — the number of seats stays at four.";
+  $("squadFields").innerHTML =
+    WILBEST_NAMES.map((n, i) =>
+      '<div class="squad-member">' +
+        '<div class="squad-member-title">Guest #' + (i + 1) + (i === 0 ? ' · Main contact' : '') + '</div>' +
+        '<input type="text" class="wb-name" value="' + n + '" data-original="' + n + '" readonly ' +
+               'title="Double-tap to edit" style="background:#F1EEE3;cursor:pointer;">' +
+      '</div>').join("") +
+    '<div style="font-size:11.5px;color:#8a938a;margin-top:-6px;">✎ Double-tap a name to edit it.</div>';
+
+  document.querySelectorAll(".wb-name").forEach(inp => {
+    const unlock = () => {
+      inp.readOnly = false;
+      inp.style.background = "#fff";
+      inp.style.cursor = "text";
+      inp.focus();
+      inp.select();
+    };
+    inp.addEventListener("dblclick", unlock);
+    inp.addEventListener("blur", () => {
+      if (!inp.value.trim()) inp.value = inp.dataset.original;
+      inp.readOnly = true;
+      inp.style.background = "#F1EEE3";
+      inp.style.cursor = "pointer";
+      markInvalid(inp, false);
+    });
+  });
+
+  hide("nameRow");
+  hide("cityField");
+  hide("socialRow");
+  hide("memberHeardRow");
+  hide("referredByField");
+  hide("freebiesSection");
+
+  // quietly fill the fields the system needs behind the scenes
+  $("fullName").value = WILBEST_NAMES[0];
+  $("nickname").value = "Team Wilbest";      // makes the confirmation email say "Congratulations, Team Wilbest!"
+  $("member").value   = "No";
+  const heardSel = $("heard");
+  heardSel.add(new Option("Team Wilbest (co-fandom invite)", "Team Wilbest (co-fandom invite)"));
+  heardSel.value = "Team Wilbest (co-fandom invite)";
+  const fb = $("freebies");
+  fb.selectedIndex = fb.options.length - 1;  // "No — simply here to celebrate"
+
+  // Payment: Madams' Vault swapped for Sponsorship & Collab
+  const vaultBox = document.querySelector(".vault");
+  if (vaultBox) vaultBox.style.display = "none";
+  $("sponsorBlock").style.display = "block";
+  $("sponsorKitLink").href = SPONSOR_KIT_URL;
+  $("sponsorChoice").onchange = () => {
+    const keen = $("sponsorChoice").value !== "Not at this time";
+    $("sponsorDetail").style.display = keen ? "block" : "none";
+    if (!keen) $("sponsorAmount").value = 0;
+    updatePayTotal();
+  };
+  $("sponsorAmount").addEventListener("input", updatePayTotal);
+
+  // Buttons + totals
+  $("continueBtn").textContent = "Review our reservation →";
+  $("submitBtn").textContent = "Reserve our seats.";
+  updatePayTotal();
+}
+
+if (isWilbest) {
+  // Team Wilbest link — works even while registration is paused
+  applyWilbestMode_();
+} else if (!SITE_OPEN) {
   // MASTER SWITCH OFF — everyone (general, co-fandom, AND members) sees the paused page
   renderPausedHold_();
 } else if (partnerFandom && !PARTNER_OPEN) {
