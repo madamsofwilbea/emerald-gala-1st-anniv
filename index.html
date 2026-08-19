@@ -773,7 +773,7 @@
       </div>
       <p class="section-note">Choose a payment method, scan the QR, and send the exact total shown below — then upload your receipt.</p>
 
-      <div class="vault">
+      <div class="vault" id="vaultBox">
         <div class="vault-title">The Madams' Vault 💚</div>
         <div class="vault-sub">Feeling generous? Add an optional donation to support future WilBea projects.</div>
         <div class="vault-amount">
@@ -791,6 +791,27 @@
             <option value="Anonymous">Keep me anonymous</option>
           </select>
         </div>
+      </div>
+
+      <div class="vault" id="sponsorBox" style="display:none;">
+        <div class="vault-title">Sponsorship &amp; Collab ✨</div>
+        <div class="vault-sub">Would your team like to support the Gala beyond your seats? Tick any lanes you'd love to help with, add a pledge amount, or both — everything here is completely optional.</div>
+
+        <label class="field-label" style="font-size:13px;">Which lanes interest you?</label>
+        <div id="sponsorLanes"></div>
+
+        <label class="field-label" style="font-size:13px;margin-top:16px;">Pledge amount (optional)</label>
+        <div class="vault-amount">
+          <button type="button" id="sponsorMinus" aria-label="Less">–</button>
+          <span class="vpeso">₱</span>
+          <input type="number" id="sponsorAmount" value="0" min="0" step="10" inputmode="numeric">
+          <button type="button" id="sponsorPlus" aria-label="More">+</button>
+        </div>
+        <div class="vault-hint">Adjust by ₱10, or type any amount in multiples of ₱10. This is added to your total below.</div>
+        <div class="vault-err" id="sponsorErr">Please enter an amount in multiples of ₱10.</div>
+
+        <label class="field-label" style="font-size:13px;margin-top:16px;">Anything you'd like us to know? (optional)</label>
+        <textarea id="sponsorNote" placeholder="e.g. we can bring 20 giveaway items, or we'd like to sponsor merienda — we'll reach out to arrange the details"></textarea>
       </div>
 
       <div class="total">
@@ -931,17 +952,46 @@ const PARTNERS = {
 };
 /* ===== MEMBERS ACCESS: registration is unlocked only via ?ref=madams. Change the code below to make the members link harder to guess. ===== */
 const MEMBERS_CODE = "madams";
-/* ===== RESERVED ACCESS: ?ref=reserved opens the same form (Icon only) and works even while the site is paused. ===== */
+/* ===== RESERVED ACCESS: ?ref=reserved opens the same form (Icon only), even while paused. Set RESERVED_OPEN to true to enable, false to close it. ===== */
 const RESERVED_CODE = "reserved";
+const RESERVED_OPEN = true;
+
+/* ===== TEAM ACCESS: special VIP team links. Fixed names (no typing), guests fill in
+   only email + mobile, includes Vault + Sponsorship, and works even while the site is
+   paused. Set TEAMS_OPEN to false to close BOTH team links. To add another team later,
+   just add one more line to TEAMS below. ===== */
+const TEAMS_OPEN = true;
+const TEAMS = {
+  wilbest: {
+    team: "Team Wilbest",
+    names: ["Roshan De Vera", "Manolito Arasga", "Virginia Espiritu", "Maffy Ramos"],
+    vault: false,    // no Madams' Vault donation box on this page
+    sponsor: true    // show the Sponsorship & Collab box
+  },
+  serena: {
+    team: "Team Serena",
+    names: ["Vea Dacles", "Rhea Mae Intino", "Rain Acosta", "Patrick Magno", "Ma. Shine Ros Lepasana", "Arcie San Pedro"],
+    vault: true,     // show the Madams' Vault donation box
+    sponsor: false   // no Sponsorship & Collab box on this page
+  }
+};
+
 let partnerFandom = "";
 let isMember = false;
 let isReserved = false;
+let teamKey = "";
+let teamCfg = null;
 {
   const ref = (new URLSearchParams(location.search).get("ref") || "").toLowerCase().trim();
   if (ref === RESERVED_CODE) isReserved = true;
   else if (ref === MEMBERS_CODE) isMember = true;
+  else if (ref && TEAMS[ref]) { teamKey = ref; teamCfg = TEAMS[ref]; }
   else if (ref && PARTNERS[ref]) partnerFandom = PARTNERS[ref];
 }
+const isTeam = !!teamCfg;
+
+const teamVault   = isTeam ? teamCfg.vault !== false : true;
+const teamSponsor = isTeam ? teamCfg.sponsor === true : false;
 
 const peso = n => "₱" + n.toLocaleString("en-PH");
 const $ = id => document.getElementById(id);
@@ -952,6 +1002,7 @@ if(!isPreview){ $("previewBanner").style.display = "none"; }
 
 /* ---- solo / squad + pax ---- */
 function donationAmt(){
+  if (!teamVault) return 0;
   const v = parseInt($("vaultAmount").value, 10);
   return (v && v > 0) ? v : 0;
 }
@@ -965,16 +1016,46 @@ function checkDonation(){
   document.querySelector(".vault-amount").classList.toggle("invalid", bad);
   return !bad;
 }
+/* ---- sponsorship pledge (team pages only) ---- */
+function sponsorAmt(){
+  const el = $("sponsorAmount");
+  if (!teamSponsor || !el) return 0;
+  const v = parseInt(el.value, 10);
+  return (v && v > 0) ? v : 0;
+}
+function sponsorValid(){
+  const s = sponsorAmt();
+  return s === 0 || s % 10 === 0;
+}
+function checkSponsor(){
+  if (!teamSponsor) return true;
+  const bad = sponsorAmt() > 0 && sponsorAmt() % 10 !== 0;
+  $("sponsorErr").style.display = bad ? "block" : "none";
+  $("sponsorBox").querySelector(".vault-amount").classList.toggle("invalid", bad);
+  return !bad;
+}
+function sponsorLanesPicked(){
+  return [...document.querySelectorAll('#sponsorLanes input[type="checkbox"]:checked')].map(c => c.value);
+}
+
 function updatePayTotal(){
-  const reg = pax * PRICE, don = donationAmt();
-  $("payTotal").textContent = peso(reg + don);
-  $("payBreakdown").textContent = don > 0 ? ("Registration " + peso(reg) + "  •  Madams' Vault " + peso(don)) : "";
+  const reg = pax * PRICE, don = donationAmt(), spo = sponsorAmt();
+  $("payTotal").textContent = peso(reg + don + spo);
+  const bits = ["Registration " + peso(reg)];
+  if (don > 0) bits.push("Madams' Vault " + peso(don));
+  if (spo > 0) bits.push("Sponsorship " + peso(spo));
+  $("payBreakdown").textContent = bits.length > 1 ? bits.join("  •  ") : "";
   const ack = document.getElementById("vaultAck");
   if (ack) ack.style.display = don > 0 ? "block" : "none";
 }
 $("vaultMinus").onclick = () => { let v = parseInt($("vaultAmount").value,10)||0; v = Math.max(0, Math.ceil(v/10)*10 - 10); $("vaultAmount").value = v; updatePayTotal(); checkDonation(); };
 $("vaultPlus").onclick  = () => { let v = parseInt($("vaultAmount").value,10)||0; v = Math.floor(v/10)*10 + 10; $("vaultAmount").value = v; updatePayTotal(); checkDonation(); };
 $("vaultAmount").addEventListener("input", () => { updatePayTotal(); checkDonation(); });
+if ($("sponsorAmount")) {
+  $("sponsorMinus").onclick = () => { let v = parseInt($("sponsorAmount").value,10)||0; v = Math.max(0, Math.ceil(v/10)*10 - 10); $("sponsorAmount").value = v; updatePayTotal(); checkSponsor(); };
+  $("sponsorPlus").onclick  = () => { let v = parseInt($("sponsorAmount").value,10)||0; v = Math.floor(v/10)*10 + 10; $("sponsorAmount").value = v; updatePayTotal(); checkSponsor(); };
+  $("sponsorAmount").addEventListener("input", () => { updatePayTotal(); checkSponsor(); });
+}
 
 function renderTotal(){
   $("paxCount").textContent = pax;
@@ -1141,6 +1222,43 @@ function validateDetails(){
   return { ok, errors };
 }
 
+/* ---- team pages: only email + mobile are needed ---- */
+function validateTeam(){
+  let ok = true;
+  const errors = [];
+  const emailEl = $("email"), mobileEl = $("mobile");
+
+  const eVal = emailEl.value.trim();
+  if(!eVal){ markInvalid(emailEl, true); ok = false; errors.push("Please provide an email address."); }
+  else if(!EMAIL_RE.test(eVal)){ markInvalid(emailEl, true); ok = false; errors.push("That email doesn't look right — please check it."); }
+  else markInvalid(emailEl, false);
+
+  const mBad = !mobileEl.value.trim();
+  markInvalid(mobileEl, mBad);
+  if(mBad){ ok = false; errors.push("Please provide a contact number."); }
+
+  return { ok, errors };
+}
+
+function buildTeamSummary(){
+  const g = id => $(id).value.trim();
+  let h = "";
+  h += sGroup("Reservation");
+  h += sRow("Type", teamCfg.team);
+  h += sRow("Seats", teamCfg.names.length + " seats");
+
+  h += sGroup("Attendees");
+  teamCfg.names.forEach((n, i) => { h += sRow("Seat #" + (i + 1), n); });
+
+  h += sGroup("Contact Person");
+  h += sRow("Email", g("email"));
+  h += sRow("Mobile", g("mobile"));
+
+  h += '<div class="summary-total"><span class="st-label">TOTAL TO PAY</span><span class="st-amt">' +
+       peso(teamCfg.names.length * PRICE) + '</span></div>';
+  $("summaryBody").innerHTML = h;
+}
+
 /* ---- popup ---- */
 function showModal(errors){
   const list = $("modalList");
@@ -1205,9 +1323,9 @@ function buildSummary(){
 function goTop(){ $("formCard").scrollIntoView({behavior:"smooth", block:"start"}); }
 
 $("continueBtn").onclick = () => {
-  const res = validateDetails();
+  const res = isTeam ? validateTeam() : validateDetails();
   if(!res.ok){ showModal(res.errors); return; }
-  buildSummary();
+  if (isTeam) buildTeamSummary(); else buildSummary();
   $("stepForm").style.display = "none";
   $("summarySection").style.display = "";
   goTop();
@@ -1245,11 +1363,12 @@ document.querySelectorAll(".pay-method").forEach(b => { b.onclick = () => select
 
 /* ---- submit ---- */
 $("submitBtn").onclick = async () => {
-  const res = validateDetails();
+  const res = isTeam ? validateTeam() : validateDetails();
   let ok = res.ok;
   const errors = [...res.errors];
   if(!paymentMethod){ ok = false; errors.push("Choose your payment method — GCash, BPI, or BDO."); }
   if(!donationValid()){ ok = false; errors.push("Your Vault donation must be in multiples of ₱10."); checkDonation(); }
+  if(!sponsorValid()){ ok = false; errors.push("Your sponsorship pledge must be in multiples of ₱10."); checkSponsor(); }
   if(!proofFile){ $("fileErr").style.display = "block"; ok = false; errors.push("Upload your proof of payment."); }
   else { $("fileErr").style.display = "none"; }
   if(!$("agree").checked){ $("agree").classList.add("invalid"); ok = false; errors.push("Please tick the confirmation box to finish."); }
@@ -1288,9 +1407,34 @@ $("submitBtn").onclick = async () => {
     vaultDonation: donationAmt(),
     vaultAck: donationAmt() > 0 ? $("vaultAckChoice").value : "",
     total: pax * PRICE,
-    grandTotal: pax * PRICE + donationAmt(),
+    grandTotal: pax * PRICE + donationAmt() + sponsorAmt(),
     submittedAt: new Date().toLocaleString("en-PH")
   };
+
+  if (isTeam) {
+    // Fixed team roster — the greeting comes from the nickname ("Team Wilbest" / "Team Serena")
+    data.fullName     = teamCfg.names[0];
+    data.nickname     = teamCfg.team;
+    data.registration = "Squad";
+    data.guests       = teamCfg.names.length;
+    data.squadMembers = teamCfg.names.slice(1).map(n => ({ name: n, nickname: "" }));
+    data.partner      = teamCfg.team;
+    data.member       = "No";
+    data.heardFrom    = "Team invitation";
+    data.city         = "";
+    data.instagram    = "";
+    data.twitter      = "";
+    data.referredBy   = "";
+    data.freebies     = "";
+    data.freebieList  = "";
+    data.backupMobile = data.mobile;
+    data.backupEmail  = data.email;
+    data.total        = teamCfg.names.length * PRICE;
+    data.grandTotal   = data.total + donationAmt() + sponsorAmt();
+    data.sponsorLanes  = sponsorLanesPicked().join("; ");
+    data.sponsorPledge = sponsorAmt();
+    data.sponsorNote   = $("sponsorNote") ? $("sponsorNote").value.trim() : "";
+  }
 
   // read the proof file as text so it can travel with the form
   const reader = new FileReader();
@@ -1345,7 +1489,88 @@ function renderPausedHold_() {
   if (card) { card.style.display = "none"; card.parentNode.insertBefore(hold, card); }
 }
 
-if (isReserved) {
+const SPONSOR_LANES = [
+  "Prizes & Giveaways",
+  "Food & Drinks",
+  "Activity Booths",
+  "Setting the Scene",
+  "Monetary Pledge",
+  "Something Else"
+];
+
+function renderTeamView_(cfg){
+  const seats = cfg.names.length;
+
+  /* --- reservation step: fixed, no choices --- */
+  $("modeToggle").style.display = "none";
+  $("paxRow").style.display = "none";
+  $("resNote").textContent = "Your seats are already reserved — here's your line-up.";
+
+  /* --- welcome banner --- */
+  $("partnerBanner").innerHTML =
+    '💚 A warm welcome, <strong style="color:#E8C989;">' + cfg.team + '</strong>! ' +
+    'We\'ve reserved <strong>' + seats + ' seats</strong> for you. Your names are already on the list — ' +
+    'we just need one email and contact number so we can reach you.';
+  $("partnerBanner").style.display = "block";
+
+  /* --- the fixed roster, shown read-only --- */
+  const roster = document.createElement("div");
+  roster.style.cssText = "background:#FBFAF5;border:1px solid #E4DECB;border-radius:12px;padding:16px 18px;margin:0 0 4px;";
+  let rosterHtml = '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#DAA75A;font-weight:700;margin-bottom:10px;">' +
+                   escapeHtml(cfg.team) + ' · ' + seats + ' seats</div>';
+  cfg.names.forEach((n, i) => {
+    rosterHtml += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;' +
+      (i < seats - 1 ? 'border-bottom:1px solid #EFEADC;' : '') + '">' +
+      '<span style="flex:0 0 22px;height:22px;border-radius:50%;background:#2E5D3A;color:#F7F4EC;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">' + (i + 1) + '</span>' +
+      '<span style="color:#14261C;font-size:15px;">' + escapeHtml(n) + '</span></div>';
+  });
+  rosterHtml += '<div style="font-size:12px;color:#6f7a70;margin-top:12px;line-height:1.5;">' +
+    'These names are fixed for your team. If someone needs to be swapped, message us on IG @madamsofwilbea and we\'ll sort it out. 💚</div>';
+  roster.innerHTML = rosterHtml;
+  $("modeToggle").parentNode.appendChild(roster);
+
+  /* --- details step: email + mobile only --- */
+  $("detailsNote").textContent = "Just one contact person for the whole team, please.";
+  const hideRow = el => { const r = el.closest(".two-col"); if (r) r.style.display = "none"; };
+  hideRow($("fullName"));
+  hideRow($("instagram"));
+  const cityLabel = $("city").previousElementSibling;
+  if (cityLabel) cityLabel.style.display = "none";
+  $("city").style.display = "none";
+  $("memberHeardRow").style.display = "none";
+  $("referredByField").style.display = "none";
+  $("squadSection").style.display = "none";
+  const favors = $("freebies").closest(".section");
+  if (favors) favors.style.display = "none";
+
+  /* --- Vault (per team) --- */
+  if (!teamVault) $("vaultBox").style.display = "none";
+
+  /* --- sponsorship lanes (per team) --- */
+  if (teamSponsor) {
+    const lanes = $("sponsorLanes");
+    lanes.innerHTML = SPONSOR_LANES.map((l, i) =>
+      '<label style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;cursor:pointer;font-size:14px;color:#14261C;line-height:1.4;">' +
+      '<input type="checkbox" value="' + escapeHtml(l) + '" id="lane' + i + '" style="width:17px;height:17px;margin-top:2px;flex:0 0 auto;accent-color:#2E5D3A;">' +
+      '<span>' + escapeHtml(l) + '</span></label>'
+    ).join("");
+    $("sponsorBox").style.display = "block";
+  }
+
+  /* --- totals --- */
+  mode = "squad";
+  pax = seats;
+  $("submitBtn").textContent = "Reserve our seats.";
+  updatePayTotal();
+}
+
+if (isTeam && TEAMS_OPEN) {
+  // SPECIAL TEAM LINK (?ref=wilbest, ?ref=serena) — works even while the site is paused
+  renderTeamView_(teamCfg);
+} else if (isTeam) {
+  // Team links are switched off
+  renderPausedHold_();
+} else if (isReserved && RESERVED_OPEN) {
   // RESERVED link (?ref=reserved) — same form, Icon (solo) only, works even while the site is paused
   $("modeToggle").style.display = "none";
   $("resNote").textContent = "Reserve your Icon seat below — one seat per registration.";
