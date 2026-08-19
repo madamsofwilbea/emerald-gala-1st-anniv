@@ -930,13 +930,13 @@ let pax = 1;
 let proofFile = null;
 
 /* ===== MASTER SWITCH: false = ALL registration disabled (everyone sees the paused page, incl. members). true = normal per-link logic. ===== */
-const SITE_OPEN = false;
+const SITE_OPEN = true;
 
 /* ---- co-fandom partner links (?ref=code) ---- */
 /* ===== CO-FANDOM SWITCH: set to true to RE-ENABLE the ?ref= links, false to DISABLE them ===== */
 const PARTNER_OPEN = false;
 /* ===== ENTOURAGE SWITCH: set to true to allow Entourage, false = Icon (solo) only ===== */
-const ENTOURAGE_OPEN = false;
+const ENTOURAGE_OPEN = true;
 
 const PARTNERS = {
   ates: "Ates of WilBea",
@@ -1616,17 +1616,12 @@ if (isTeam && TEAMS_OPEN) {
   }
   setMode("solo");
 } else {
-  // General public (no valid access code) — registration closed, neutral hold message
-  const card = $("formCard");
-  const gd = $("grandDetails"); if (gd) gd.style.display = "none";
-  const hold = document.createElement("div");
-  hold.className = "card";
-  hold.style.textAlign = "center";
-  hold.innerHTML =
-    '<h2 style="font-family:\'Playfair Display\',serif;color:#1F4128;margin:0 0 12px;font-weight:700;">Registration Temporarily Paused</h2>' +
-    '<p style="color:#333;line-height:1.6;max-width:460px;margin:0 auto 12px;">We\'re putting together something special, Madams. 💚 Registration is paused for a little while as we finalize a few exciting updates.</p>' +
-    '<p style="color:#666;font-size:14px;max-width:460px;margin:0 auto;">Please check back with us soon — thank you for your patience and love! ✨</p>';
-  if (card) { card.style.display = "none"; card.parentNode.insertBefore(hold, card); }
+  // General public (base link, no ref) — registration OPEN to everyone
+  if (!ENTOURAGE_OPEN) {
+    $("modeToggle").style.display = "none";
+    $("resNote").textContent = "Reserve your Icon seat below — one seat per registration.";
+  }
+  setMode("solo");
 }
 </script>
 </body>
