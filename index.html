@@ -978,7 +978,12 @@ const TEAMS = {
   serena: {
     team: "Team Serena",
     open: true,      // open
-    names: ["Vea Dacles", "Rhea Mae Intino", "Rain Acosta", "Patrick Magno", "Ma. Shine Ros Lepasana", "Arcie San Pedro"],
+    seats: 5,        // how many seats are held for them
+    askNames: true,  // guests fill in their own names
+    /* Previous fixed roster, kept here in case you want it back — swap these
+       two lines above for:  names: [ ...the list below... ]
+       Vea Dacles, Rhea Mae Intino, Rain Acosta, Patrick Magno,
+       Ma. Shine Ros Lepasana, Arcie San Pedro */
     vault: true,     // show the Madams' Vault donation box
     sponsor: false   // no Sponsorship & Collab box on this page
   },
@@ -998,8 +1003,8 @@ const TEAMS = {
        you already know exactly who is on the team. */
     seats: 3,        // how many seats are held for them
     askNames: true,  // guests fill in their own names
-    vault: false,    // no Madams' Vault donation box on this page
-    sponsor: true    // show the Sponsorship & Collab box
+    vault: true,     // show the Madams' Vault donation box
+    sponsor: false   // no Sponsorship & Collab box on this page
   }
 };
 
