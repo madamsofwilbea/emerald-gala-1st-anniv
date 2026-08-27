@@ -936,7 +936,12 @@ const SITE_OPEN = true;
 /* ===== CO-FANDOM SWITCH: set to true to RE-ENABLE the ?ref= links, false to DISABLE them ===== */
 const PARTNER_OPEN = false;
 /* ===== ENTOURAGE SWITCH: set to true to allow Entourage, false = Icon (solo) only ===== */
-const ENTOURAGE_OPEN = true;
+const ENTOURAGE_OPEN = false;
+/* ===== AUTO-CLOSE: true = before showing the form, ask the backend how many seats are
+   left (read from the "Copy of Summary" tab, cell F14). If none are left, guests see the
+   Fully Booked page instead. Team and reserved links are never auto-closed. Set to false
+   to go back to closing the form by hand with SITE_OPEN. ===== */
+const SEAT_CHECK_ON = true;
 
 const PARTNERS = {
   ates: "Ates of WilBea",
@@ -958,25 +963,41 @@ const RESERVED_OPEN = true;
 
 /* ===== TEAM ACCESS: special VIP team links. Fixed names (no typing), guests fill in
    only email + mobile, includes Vault + Sponsorship, and works even while the site is
-   paused. Set TEAMS_OPEN to false to close BOTH team links. To add another team later,
-   just add one more line to TEAMS below. ===== */
+   paused. Set TEAMS_OPEN to false to close ALL team links at once. To close just ONE
+   team, set that team's own "open" line to false — the others keep working. To add
+   another team later, just add one more block to TEAMS below. ===== */
 const TEAMS_OPEN = true;
 const TEAMS = {
   wilbest: {
     team: "Team Wilbest",
+    open: false,     // CLOSED — this team has finished registering
     names: ["Roshan De Vera", "Manolito Arasga", "Virginia Espiritu", "Maffy Ramos"],
     vault: false,    // no Madams' Vault donation box on this page
     sponsor: true    // show the Sponsorship & Collab box
   },
   serena: {
     team: "Team Serena",
+    open: true,      // open
     names: ["Vea Dacles", "Rhea Mae Intino", "Rain Acosta", "Patrick Magno", "Ma. Shine Ros Lepasana", "Arcie San Pedro"],
     vault: true,     // show the Madams' Vault donation box
     sponsor: false   // no Sponsorship & Collab box on this page
   },
   ofc: {
     team: "Team OFC",
+    open: true,      // open
     names: ["Shrane Honrales", "Jian Manaog"],
+    vault: false,    // no Madams' Vault donation box on this page
+    sponsor: true    // show the Sponsorship & Collab box
+  },
+  jhes: {
+    team: "Team Jhes",
+    open: true,      // open
+    /* This team works differently from the ones above. Instead of a fixed
+       "names" list, it reserves a number of seats and lets the guests type
+       in who is coming. Use "seats" + "askNames" for that; use "names" when
+       you already know exactly who is on the team. */
+    seats: 3,        // how many seats are held for them
+    askNames: true,  // guests fill in their own names
     vault: false,    // no Madams' Vault donation box on this page
     sponsor: true    // show the Sponsorship & Collab box
   }
@@ -995,6 +1016,21 @@ let teamCfg = null;
   else if (ref && PARTNERS[ref]) partnerFandom = PARTNERS[ref];
 }
 const isTeam = !!teamCfg;
+
+/* How many seats this team holds, and whether the guests type their own names */
+const teamSeats = isTeam ? (teamCfg.names ? teamCfg.names.length : (Number(teamCfg.seats) || 1)) : 0;
+const teamAskNames = isTeam ? (teamCfg.askNames === true || !teamCfg.names) : false;
+
+/* The roster: either the fixed list, or whatever the guests have typed in */
+function teamNames_(){
+  if (!teamAskNames) return teamCfg.names.slice();
+  const out = [];
+  for (let i = 0; i < teamSeats; i++){
+    const el = document.getElementById("teamName" + i);
+    out.push(el ? el.value.trim() : "");
+  }
+  return out;
+}
 
 const teamVault   = isTeam ? teamCfg.vault !== false : true;
 const teamSponsor = isTeam ? teamCfg.sponsor === true : false;
@@ -1234,6 +1270,18 @@ function validateTeam(){
   const errors = [];
   const emailEl = $("email"), mobileEl = $("mobile");
 
+  if (teamAskNames) {
+    let missing = false;
+    for (let i = 0; i < teamSeats; i++){
+      const el = $("teamName" + i);
+      if (!el) continue;
+      const bad = !el.value.trim();
+      markInvalid(el, bad);
+      if (bad) missing = true;
+    }
+    if (missing) { ok = false; errors.push("Please enter a full name for all " + teamSeats + " guests."); }
+  }
+
   const eVal = emailEl.value.trim();
   if(!eVal){ markInvalid(emailEl, true); ok = false; errors.push("Please provide an email address."); }
   else if(!EMAIL_RE.test(eVal)){ markInvalid(emailEl, true); ok = false; errors.push("That email doesn't look right — please check it."); }
@@ -1248,20 +1296,21 @@ function validateTeam(){
 
 function buildTeamSummary(){
   const g = id => $(id).value.trim();
+  const names = teamNames_();
   let h = "";
   h += sGroup("Reservation");
   h += sRow("Type", teamCfg.team);
-  h += sRow("Seats", teamCfg.names.length + " seats");
+  h += sRow("Seats", teamSeats + " seats");
 
   h += sGroup("Attendees");
-  teamCfg.names.forEach((n, i) => { h += sRow("Seat #" + (i + 1), n); });
+  names.forEach((n, i) => { h += sRow("Seat #" + (i + 1), n); });
 
   h += sGroup("Contact Person");
   h += sRow("Email", g("email"));
   h += sRow("Mobile", g("mobile"));
 
   h += '<div class="summary-total"><span class="st-label">TOTAL TO PAY</span><span class="st-amt">' +
-       peso(teamCfg.names.length * PRICE) + '</span></div>';
+       peso(teamSeats * PRICE) + '</span></div>';
   $("summaryBody").innerHTML = h;
 }
 
@@ -1414,16 +1463,18 @@ $("submitBtn").onclick = async () => {
     vaultAck: donationAmt() > 0 ? $("vaultAckChoice").value : "",
     total: pax * PRICE,
     grandTotal: pax * PRICE + donationAmt() + sponsorAmt(),
-    submittedAt: new Date().toLocaleString("en-PH")
+    submittedAt: new Date().toLocaleString("en-PH"),
+    accessType: isTeam ? "team" : isReserved ? "reserved" : isMember ? "members" : partnerFandom ? "partner" : "public"
   };
 
   if (isTeam) {
-    // Fixed team roster — the greeting comes from the nickname ("Team Wilbest" / "Team Serena")
-    data.fullName     = teamCfg.names[0];
+    // Fixed roster, or the names the team just typed in
+    const names = teamNames_();
+    data.fullName     = names[0];
     data.nickname     = teamCfg.team;
     data.registration = "Squad";
-    data.guests       = teamCfg.names.length;
-    data.squadMembers = teamCfg.names.slice(1).map(n => ({ name: n, nickname: "" }));
+    data.guests       = teamSeats;
+    data.squadMembers = names.slice(1).map(n => ({ name: n, nickname: "" }));
     data.partner      = teamCfg.team;
     data.member       = "No";
     data.heardFrom    = "Team invitation";
@@ -1435,7 +1486,7 @@ $("submitBtn").onclick = async () => {
     data.freebieList  = "";
     data.backupMobile = data.mobile;
     data.backupEmail  = data.email;
-    data.total        = teamCfg.names.length * PRICE;
+    data.total        = teamSeats * PRICE;
     data.grandTotal   = data.total + donationAmt() + sponsorAmt();
     data.sponsorLanes  = sponsorLanesPicked().join("; ");
     data.sponsorPledge = sponsorAmt();
@@ -1482,6 +1533,46 @@ function showSuccess(){
   $("successScreen").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
+function renderFullHold_() {
+  const card = $("formCard");
+  const gd = $("grandDetails"); if (gd) gd.style.display = "none";
+  const prev = $("previewBanner"); if (prev) prev.style.display = "none";
+  const hold = document.createElement("div");
+  hold.className = "card";
+  hold.id = "fullHold";
+  hold.style.textAlign = "center";
+  hold.innerHTML =
+    '<h2 style="font-family:\'Playfair Display\',serif;color:#1F4128;margin:0 0 12px;font-weight:700;">The Gala Is Fully Booked</h2>' +
+    '<p style="color:#333;line-height:1.6;max-width:460px;margin:0 auto 12px;">Every seat at The Emerald Gala has been claimed, Madams. 💚 Thank you for the overwhelming love — we are completely full.</p>' +
+    '<p style="color:#666;font-size:14px;max-width:460px;margin:0 auto;">Follow us on IG <strong>@madamsofwilbea</strong> for waitlist news and everything coming next. ✨</p>';
+  if (card) { card.style.display = "none"; card.parentNode.insertBefore(hold, card); }
+}
+
+/* Ask the backend how many seats are left.
+   Uses a <script> tag rather than fetch(), because the form talks to Google
+   in no-cors mode and so can't read a normal reply. Hands back a number, or
+   null if the backend can't be reached — in which case the form stays open. */
+function checkSeats_(done) {
+  var s = document.createElement("script");
+  var cbName = "__seats" + Math.floor(Math.random() * 1e9);
+  var finished = false;
+  function cleanup() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timer);
+    try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+    if (s.parentNode) s.parentNode.removeChild(s);
+  }
+  var timer = setTimeout(function () { cleanup(); done(null); }, 7000);
+  window[cbName] = function (res) {
+    cleanup();
+    done(res && typeof res.seatsLeft === "number" ? res.seatsLeft : null);
+  };
+  s.onerror = function () { cleanup(); done(null); };
+  s.src = SUBMIT_URL + "?callback=" + cbName + "&t=" + Date.now();
+  document.body.appendChild(s);
+}
+
 function renderPausedHold_() {
   const card = $("formCard");
   const gd = $("grandDetails"); if (gd) gd.style.display = "none";
@@ -1505,33 +1596,50 @@ const SPONSOR_LANES = [
 ];
 
 function renderTeamView_(cfg){
-  const seats = cfg.names.length;
+  const seats = teamSeats;
 
   /* --- reservation step: fixed, no choices --- */
   $("modeToggle").style.display = "none";
   $("paxRow").style.display = "none";
-  $("resNote").textContent = "Your seats are already reserved — here's your line-up.";
+  $("resNote").textContent = teamAskNames
+    ? "Your seats are already reserved — just tell us who's coming."
+    : "Your seats are already reserved — here's your line-up.";
 
   /* --- welcome banner --- */
   $("partnerBanner").innerHTML =
     '💚 A warm welcome, <strong style="color:#E8C989;">' + cfg.team + '</strong>! ' +
-    'We\'ve reserved <strong>' + seats + ' seats</strong> for you. Your names are already on the list — ' +
-    'we just need one email and contact number so we can reach you.';
+    'We\'ve reserved <strong>' + seats + ' seats</strong> for you. ' +
+    (teamAskNames
+      ? 'Just fill in the names of everyone attending, plus one email and contact number so we can reach you.'
+      : 'Your names are already on the list — we just need one email and contact number so we can reach you.');
   $("partnerBanner").style.display = "block";
 
-  /* --- the fixed roster, shown read-only --- */
+  /* --- the roster: typed in, or shown read-only --- */
   const roster = document.createElement("div");
   roster.style.cssText = "background:#FBFAF5;border:1px solid #E4DECB;border-radius:12px;padding:16px 18px;margin:0 0 4px;";
   let rosterHtml = '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#DAA75A;font-weight:700;margin-bottom:10px;">' +
                    escapeHtml(cfg.team) + ' · ' + seats + ' seats</div>';
-  cfg.names.forEach((n, i) => {
-    rosterHtml += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;' +
-      (i < seats - 1 ? 'border-bottom:1px solid #EFEADC;' : '') + '">' +
-      '<span style="flex:0 0 22px;height:22px;border-radius:50%;background:#2E5D3A;color:#F7F4EC;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">' + (i + 1) + '</span>' +
-      '<span style="color:#14261C;font-size:15px;">' + escapeHtml(n) + '</span></div>';
-  });
-  rosterHtml += '<div style="font-size:12px;color:#6f7a70;margin-top:12px;line-height:1.5;">' +
-    'These names are fixed for your team. If someone needs to be swapped, message us on IG @madamsofwilbea and we\'ll sort it out. 💚</div>';
+
+  if (teamAskNames) {
+    for (let i = 0; i < seats; i++){
+      rosterHtml += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;">' +
+        '<span style="flex:0 0 22px;height:22px;border-radius:50%;background:#2E5D3A;color:#F7F4EC;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">' + (i + 1) + '</span>' +
+        '<input type="text" id="teamName' + i + '" placeholder="Full name of guest ' + (i + 1) + '" style="flex:1 1 auto;min-width:0;">' +
+        '</div>';
+    }
+    rosterHtml += '<div style="font-size:12px;color:#6f7a70;margin-top:12px;line-height:1.5;">' +
+      'All ' + seats + ' seats are held for your team — please fill in every name. ' +
+      'The first name listed will be our main contact. 💚</div>';
+  } else {
+    cfg.names.forEach((n, i) => {
+      rosterHtml += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;' +
+        (i < seats - 1 ? 'border-bottom:1px solid #EFEADC;' : '') + '">' +
+        '<span style="flex:0 0 22px;height:22px;border-radius:50%;background:#2E5D3A;color:#F7F4EC;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">' + (i + 1) + '</span>' +
+        '<span style="color:#14261C;font-size:15px;">' + escapeHtml(n) + '</span></div>';
+    });
+    rosterHtml += '<div style="font-size:12px;color:#6f7a70;margin-top:12px;line-height:1.5;">' +
+      'These names are fixed for your team. If someone needs to be swapped, message us on IG @madamsofwilbea and we\'ll sort it out. 💚</div>';
+  }
   roster.innerHTML = rosterHtml;
   $("modeToggle").parentNode.appendChild(roster);
 
@@ -1570,11 +1678,11 @@ function renderTeamView_(cfg){
   updatePayTotal();
 }
 
-if (isTeam && TEAMS_OPEN) {
-  // SPECIAL TEAM LINK (?ref=wilbest, ?ref=serena) — works even while the site is paused
+if (isTeam && TEAMS_OPEN && teamCfg.open !== false) {
+  // SPECIAL TEAM LINK (?ref=wilbest, ?ref=serena, ?ref=ofc) — works even while the site is paused
   renderTeamView_(teamCfg);
 } else if (isTeam) {
-  // Team links are switched off
+  // Team links are switched off — either ALL of them (TEAMS_OPEN) or just this one (open: false)
   renderPausedHold_();
 } else if (isReserved && RESERVED_OPEN) {
   // RESERVED link (?ref=reserved) — same form, Icon (solo) only, works even while the site is paused
@@ -1628,6 +1736,16 @@ if (isTeam && TEAMS_OPEN) {
     $("resNote").textContent = "Reserve your Icon seat below — one seat per registration.";
   }
   setMode("solo");
+}
+
+/* ---- LIVE SEAT CHECK ----
+   Runs after the usual link gating above. Team and reserved links are skipped,
+   and so is preview mode. If the backend can't be reached, nothing changes and
+   the form stays open. */
+if (SEAT_CHECK_ON && !isPreview && !isTeam && !(isReserved && RESERVED_OPEN) && SITE_OPEN) {
+  checkSeats_(function (left) {
+    if (left !== null && left <= 0) renderFullHold_();
+  });
 }
 </script>
 </body>
