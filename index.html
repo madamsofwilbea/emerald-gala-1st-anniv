@@ -929,6 +929,11 @@ let mode = "solo";
 let pax = 1;
 let proofFile = null;
 
+/* ===== SOLD OUT: true = the Gala is full. EVERY link (general, members, co-fandom,
+   reserved, and all team links) shows the Fully Booked page. Nothing else below
+   matters while this is true. Set to false to go back to normal per-link logic. ===== */
+const SOLD_OUT = true;
+
 /* ===== MASTER SWITCH: false = ALL registration disabled (everyone sees the paused page, incl. members). true = normal per-link logic. ===== */
 const SITE_OPEN = true;
 
@@ -1683,7 +1688,11 @@ function renderTeamView_(cfg){
   updatePayTotal();
 }
 
-if (isTeam && TEAMS_OPEN && teamCfg.open !== false) {
+if (SOLD_OUT) {
+  // SOLD OUT — everyone, on every link, sees the Fully Booked page
+  const hb = $("heroBanner"); if (hb) hb.style.display = "none";
+  renderFullHold_();
+} else if (isTeam && TEAMS_OPEN && teamCfg.open !== false) {
   // SPECIAL TEAM LINK (?ref=wilbest, ?ref=serena, ?ref=ofc) — works even while the site is paused
   renderTeamView_(teamCfg);
 } else if (isTeam) {
@@ -1747,7 +1756,7 @@ if (isTeam && TEAMS_OPEN && teamCfg.open !== false) {
    Runs after the usual link gating above. Team and reserved links are skipped,
    and so is preview mode. If the backend can't be reached, nothing changes and
    the form stays open. */
-if (SEAT_CHECK_ON && !isPreview && !isTeam && !(isReserved && RESERVED_OPEN) && SITE_OPEN) {
+if (!SOLD_OUT && SEAT_CHECK_ON && !isPreview && !isTeam && !(isReserved && RESERVED_OPEN) && SITE_OPEN) {
   checkSeats_(function (left) {
     if (left !== null && left <= 0) renderFullHold_();
   });
